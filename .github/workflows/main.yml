@@ -20,17 +20,31 @@ jobs:
           java-version: '17'
           distribution: temurin
 
-      - name: Setup Gradle 8.8
+      - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.8'
 
-      - name: Build mod
-        working-directory: modforge
-        run: gradle build --no-daemon
+      - name: Find and build mod
+        shell: bash
+        run: |
+          echo "Buscando build.gradle..."
+          BUILD_FILE=$(find . -name build.gradle -not -path '*/.gradle/*' -print -quit)
+
+          if [ -z "$BUILD_FILE" ]; then
+            echo "ERROR: No se encontró build.gradle"
+            find . -maxdepth 4 -type f | head -100
+            exit 1
+          fi
+
+          MOD_DIR=$(dirname "$BUILD_FILE")
+          echo "Proyecto encontrado en: $MOD_DIR"
+          cd "$MOD_DIR"
+          gradle build --no-daemon
 
       - name: Upload JAR
         uses: actions/upload-artifact@v4
         with:
           name: Mario-Terror-Mod
-          path: modforge/build/libs/*.jar
+          path: '**/build/libs/*.jar'
+          if-no-files-found: error
